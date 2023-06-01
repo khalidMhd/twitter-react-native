@@ -1,13 +1,24 @@
 export function nameValidator(name) {
-  const re = /^[a-zA-Z]+$/
+  var regex = /[^a-zA-Z\s]/;
 
   if (!name.trim()) return " can't be empty.";
-  if (!re.test(name)) return 'Enter only alphabet characters'
+
+  // Check if the input string matches the regular expression
+  if (regex.test(name)) {
+    return 'Enter only alphabet characters';
+  } else {
+    return '';
+  }
   return '';
 }
 
 export function nameValidatorUpd(name) {
-  const re = /^[a-zA-Z]+$/
-  if (!re.test(name)) return 'Enter only alphabet characters'
+  var regex = /[^a-zA-Z\s]/;
+  // Check if the input string matches the regular expression
+  if (regex.test(name)) {
+    return 'Enter only alphabet characters';
+  } else {
+    return '';
+  }
   return '';
 }

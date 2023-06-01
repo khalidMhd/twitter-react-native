@@ -148,6 +148,60 @@ export const CommentScreen = ({route}) => {
     }
   };
 
+  const downloadImage = async (url) => {
+    try {
+      console.log(url);
+      const { config, fs } = RNFS;
+      const destinationPath = `${RNFS.DocumentDirectoryPath}/image.png`;
+
+  
+      const downloadOptions = {
+        fromUrl: url,
+        toFile: destinationPath,
+        background: true,
+        discretionary: true,
+        cacheable: true,
+        progressDivider: 1,
+        headers: {},
+        connectionTimeout: 60000,
+        readTimeout: 60000,
+        progress: (res) => {
+          // handle progress updates if needed
+        },
+      };
+      const result = await config({
+        fileCache: true,
+        path: destinationPath,
+        addAndroidDownloads:
+          Platform.OS === 'android'
+            ? {
+                useDownloadManager: true,
+                notification: true,
+                title: 'Download',
+                description: 'Downloading image',
+                mime: 'image/png',
+                mediaScannable: true,
+                path: destinationPath,
+              }
+            : undefined,
+      });
+
+      const { jobId } = result;
+      const downloadResult = await fs.downloadFile(downloadOptions);
+  
+      if (downloadResult.statusCode === 200) {
+        // Image downloaded successfully
+        console.log('Image downloaded successfully');
+      } else {
+        // Failed to download image
+        console.log('Failed to download image');
+      }
+    } catch (error) {
+      console.log('Error:', error);
+    }
+  };
+
+  
   return (
     <Layout>
       <View style={styles.container}>
@@ -268,8 +322,8 @@ export const CommentScreen = ({route}) => {
                           size={22}
                         />
                       </TouchableOpacity>
-                      {/* <TouchableOpacity
-                        onPress={() => downloadHandler()}
+                      <TouchableOpacity
+                        onPress={() => downloadImage(`http://${tweet?.imageURL}`)}
                         style={{
                           flexDirection: 'row',
                           marginTop: 7,
@@ -280,7 +334,7 @@ export const CommentScreen = ({route}) => {
                           color={'gray'}
                           size={25}
                         />
-                      </TouchableOpacity> */}
+                      </TouchableOpacity>
                     </View>
                   </View>
                 </View>
