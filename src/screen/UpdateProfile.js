@@ -21,8 +21,9 @@ import {baseURL} from '../APIs/instance';
 import Layout from '../components/layout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DropDownPicker from 'react-native-dropdown-picker';
-import { numberValidator } from '../helpers/numberValidator';
-import { bioValidator } from '../helpers/bioValidator';
+import {numberValidator} from '../helpers/numberValidator';
+import {bioValidator} from '../helpers/bioValidator';
+import CheckBox from '@react-native-community/checkbox';
 
 export default function UpdateProfile({route}) {
   const userId = route.params.userId;
@@ -37,7 +38,7 @@ export default function UpdateProfile({route}) {
   const [location, setLocation] = useState({value: '', error: ''});
   const [education, setEducation] = useState({value: '', error: ''});
   const [bio, setBio] = useState({value: '', error: ''});
-
+  const [isNotify, setIsNotify] = useState(true);
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState();
   const [items, setItems] = useState([
@@ -84,9 +85,10 @@ export default function UpdateProfile({route}) {
         setName({value: userRes?.name, error: ''});
         setCellNo({value: userRes?.cellNo, error: ''});
         setAddress({value: userRes?.address, error: ''});
-        setValue(userRes?.location)
+        setValue(userRes?.location);
         setEducationValue(userRes?.education);
-        setBio({value: userRes?.bio, error: ''});
+        setBio({value: userRes?.bio, error: ''})
+        setIsNotify(userRes.isNotify)
         setLoading(false);
       }
     } catch (error) {
@@ -133,6 +135,7 @@ export default function UpdateProfile({route}) {
           location: value,
           education: educationValue,
           bio: bio.value,
+          isNotify: isNotify,
         },
         {
           headers: {
@@ -174,12 +177,13 @@ export default function UpdateProfile({route}) {
         <TextInput
           label="Cell No"
           returnKeyType="next"
-          keyboardType = 'numeric'
+          keyboardType="numeric"
+          // placeholder="Enter text here"
+
           value={cellNo.value}
           onChangeText={text => setCellNo({value: text, error: ''})}
           error={!!cellNo.error}
           errorText={cellNo.error}
-      
         />
 
         <TextInput
@@ -203,7 +207,7 @@ export default function UpdateProfile({route}) {
             // flex: 1,
             // alignItems: 'center',
             // justifyContent: 'center',
-            zIndex: 10
+            zIndex: 10,
           }}>
           <DropDownPicker
             open={open}
@@ -213,7 +217,7 @@ export default function UpdateProfile({route}) {
             setValue={setValue}
             setItems={setItems}
             multiple={false}
-            placeholder='Select City'
+            placeholder="Select City"
           />
         </View>
         <View
@@ -222,7 +226,7 @@ export default function UpdateProfile({route}) {
             // alignItems: 'center',
             // justifyContent: 'center',
             marginTop: 10,
-            zIndex: 1
+            zIndex: 1,
           }}>
           <DropDownPicker
             open={openEducation}
@@ -232,7 +236,7 @@ export default function UpdateProfile({route}) {
             setValue={setEducationValue}
             setItems={setEducationList}
             multiple={false}
-            placeholder='Select Education'
+            placeholder="Select Education"
           />
         </View>
 
@@ -251,6 +255,16 @@ export default function UpdateProfile({route}) {
           error={!!bio.error}
           errorText={bio.error}
         />
+
+        <View style={styles.checkboxContainer}>
+          <CheckBox
+            value={isNotify}
+            onValueChange={setIsNotify}
+            style={styles.checkbox}
+            tintColors={{true: theme.colors.secondary, false: 'grey'}}
+          />
+          <Text style={styles.label}>Enable Notification</Text>
+        </View>
 
         <Button
           mode="contained"
@@ -301,5 +315,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     padding: 10,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    // marginBottom: 20,
+  },
+  checkbox: {
+    alignSelf: 'center',
+  },
+  label: {
+    margin: 8,
   },
 });

@@ -271,7 +271,7 @@ export const TweetListScreen = props => {
                               color={
                                 bookmarkList &&
                                 bookmarkList?.some(
-                                  bookmark => bookmark.tweet._id == tweet?._id,
+                                  bookmark => bookmark.tweet?._id == tweet?._id,
                                 )
                                   ? theme.colors.secondary
                                   : 'gray'

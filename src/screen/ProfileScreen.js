@@ -44,7 +44,9 @@ export const ProfileScreen = ({route}) => {
   const formData = new FormData();
 
   const [visible, setVisible] = React.useState(false);
+  const [deleteTweet, setDeleteTweet] = React.useState(false);
   const onDismissSnackBar = () => setVisible(false);
+  const onDismissDeleteSnackBar = () => setDeleteTweet(false);
   const pickImage = () => {
     Alert.alert('Select Image Source', 'Choose the image source', [
       {
@@ -332,6 +334,28 @@ export const ProfileScreen = ({route}) => {
       throw error;
     }
   };
+  
+  const deletehandler = async id => {
+    try {
+      const res = await axios.post(
+        `${baseURL}/api/delete-tweet`,
+        {
+          tweetId: id,
+        },
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: token,
+          },
+        },
+      );
+      console.log(res.data);
+      setDeleteTweet(true);
+      getTweet();
+    } catch (error) {
+      throw error;
+    }
+  };
 
   const retweetHandel = async id => {
     try {
@@ -511,251 +535,310 @@ export const ProfileScreen = ({route}) => {
                                       {tweet?.postedBy?.name} Retweeted
                                     </Text>
                                   </View>
-                                  <View style={styles.tweetContainer}>
-                                    <TouchableOpacity
-                                      onPress={() =>
-                                        navigation.navigate('Profile', {
-                                          user: tweet?.reTweet?.postedBy?._id,
-                                        })
-                                      }>
-                                      <Image
-                                        source={
-                                          tweet?.reTweet?.postedBy?.imageURL
-                                            ? {
-                                                uri: tweet?.reTweet?.postedBy
-                                                  ?.imageURL,
-                                              }
-                                            : require('../assets/profile.png')
-                                        }
-                                        onLoad={() => setImgError(true)}
-                                        onError={() => setImgError(false)}
-                                        style={styles.profileImage}
-                                      />
-                                    </TouchableOpacity>
-                                    <View style={{marginLeft: 10}}>
+                                  <View
+                                    style={{
+                                      display: 'flex',
+                                      flexDirection: 'row',
+                                      justifyContent: 'space-between',
+                                    }}>
+                                    <View style={styles.tweetContainer}>
                                       <TouchableOpacity
                                         onPress={() =>
-                                          navigation.navigate('Comment', {
-                                            tweetInfo: tweet?.reTweet,
+                                          navigation.navigate('Profile', {
+                                            user: tweet?.reTweet?.postedBy?._id,
                                           })
                                         }>
-                                        <View
-                                          style={{
-                                            flexDirection: 'row',
-                                            justifyContent: 'space-between',
-                                          }}>
-                                          <Text style={styles.name}>
-                                            {tweet?.reTweet?.postedBy?.name}
-                                          </Text>
-                                          {/* <Text>Khalid</Text> */}
-                                        </View>
-                                        <Text style={styles.userName}>
-                                          @{tweet?.reTweet?.postedBy?.name}
-                                        </Text>
-                                        <Text style={styles.tweet}>
-                                          {tweet?.reTweet?.content}
-                                        </Text>
-
-                                        <View>
-                                          {tweet?.reTweet?.imageURL && (
-                                            <Image
-                                              source={{
-                                                uri: `http://${tweet?.reTweet?.imageURL}`,
-                                                cache: 'only-if-cached',
-                                              }}
-                                              style={{
-                                                width: '100%',
-                                                height: 200,
-                                                aspectRatio: 1.4,
-                                              }}
-                                            />
-                                          )}
-                                        </View>
+                                        <Image
+                                          source={
+                                            tweet?.reTweet?.postedBy?.imageURL
+                                              ? {
+                                                  uri: tweet?.reTweet?.postedBy
+                                                    ?.imageURL,
+                                                }
+                                              : require('../assets/profile.png')
+                                          }
+                                          onLoad={() => setImgError(true)}
+                                          onError={() => setImgError(false)}
+                                          style={styles.profileImage}
+                                        />
                                       </TouchableOpacity>
-                                      <View
-                                        style={{
-                                          flexDirection: 'row',
-                                          justifyContent: 'space-between',
-                                          marginHorizontal: 7,
-                                          marginVertical: 10,
-                                        }}>
+                                      <View style={{marginLeft: 10}}>
                                         <TouchableOpacity
-                                          disabled={!tweet.reTweet.isComment}
                                           onPress={() =>
                                             navigation.navigate('Comment', {
                                               tweetInfo: tweet?.reTweet,
                                             })
-                                          }
-                                          style={{
-                                            flexDirection: 'row',
-                                            marginTop: 7,
-                                          }}>
-                                          <MaterialCommunityIcons
-                                            name="comment"
-                                            color={
-                                              tweet?.reTweet?.comments?.some(
-                                                cmnt =>
-                                                  cmnt?.postedBy?._id ==
-                                                  userInfo?._id,
-                                              )
-                                                ? theme.colors.secondary
-                                                : 'gray'
-                                            }
-                                            size={22}
-                                          />
-                                          <Text
+                                          }>
+                                          <View
                                             style={{
-                                              marginLeft: 5,
-                                              fontSize: 17,
+                                              flexDirection: 'row',
+                                              justifyContent: 'space-between',
                                             }}>
-                                            {tweet?.reTweet?.comments?.length ||
-                                              0}
+                                            <Text style={styles.name}>
+                                              {tweet?.reTweet?.postedBy?.name}
+                                            </Text>
+                                            {/* <Text>Khalid</Text> */}
+                                          </View>
+                                          <Text style={styles.userName}>
+                                            @{tweet?.reTweet?.postedBy?.name}
                                           </Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                          onPress={() =>
-                                            retweetHandel(tweet?.reTweet?._id)
-                                          }
-                                          style={{
-                                            flexDirection: 'row',
-                                            marginTop: 7,
-                                            marginLeft: 20,
-                                          }}>
-                                          <MaterialCommunityIcons
-                                            name="autorenew"
-                                            color={
-                                              tweet?.reTweet?.reTweetCount?.includes(
-                                                userInfo._id,
-                                              )
-                                                ? theme.colors.secondary
-                                                : 'gray'
-                                            }
-                                            size={22}
-                                          />
-                                          <Text
-                                            style={{
-                                              marginLeft: 5,
-                                              fontSize: 17,
-                                            }}>
-                                            {tweet?.reTweet?.reTweetCount
-                                              ?.length || 0}
-                                          </Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                          onPress={() =>
-                                            likeHanel(tweet?.reTweet?._id)
-                                          }
-                                          style={{
-                                            flexDirection: 'row',
-                                            marginTop: 7,
-                                            marginLeft: 20,
-                                          }}>
-                                          <MaterialCommunityIcons
-                                            name="heart"
-                                            color={
-                                              tweet?.reTweet?.likes.includes(
-                                                userInfo._id,
-                                              )
-                                                ? theme.colors.secondary
-                                                : 'gray'
-                                            }
-                                            size={22}
-                                          />
-                                          <Text
-                                            style={{
-                                              marginLeft: 5,
-                                              fontSize: 17,
-                                            }}>
-                                            {tweet?.reTweet?.likes?.length || 0}
-                                          </Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                          onPress={() =>
-                                            bookmarkHandler(tweet?.reTweet?._id)
-                                          }
-                                          style={{
-                                            flexDirection: 'row',
-                                            marginTop: 7,
-                                            marginLeft: 20,
-                                          }}>
-                                          <MaterialCommunityIcons
-                                            name="card-plus"
-                                            color={
-                                              bookmarkList &&
-                                              bookmarkList?.some(
-                                                bookmark =>
-                                                  bookmark.tweet._id ==
-                                                  tweet?.reTweet?._id,
-                                              )
-                                                ? theme.colors.secondary
-                                                : 'gray'
-                                            }
-                                            size={22}
-                                          />
                                         </TouchableOpacity>
                                       </View>
+                                    </View>
+                                    <View>
+                                      {(isEdit ||
+                                        userList?._id === userInfo?._id) && (
+                                        <TouchableOpacity
+                                          onPress={() =>
+                                            deletehandler(tweet?._id)
+                                          }
+                                          style={{
+                                            flexDirection: 'row',
+                                            marginTop: 7,
+                                          }}>
+                                          <MaterialCommunityIcons
+                                            name="delete"
+                                            color={'red'}
+                                            size={22}
+                                          />
+                                        </TouchableOpacity>
+                                      )}
+                                    </View>
+                                  </View>
+                                  <View style={{marginLeft: 65}}>
+                                    <Text style={styles.tweet}>
+                                      {tweet?.reTweet?.content}
+                                    </Text>
+
+                                    <View>
+                                      {tweet?.reTweet?.imageURL && (
+                                        <Image
+                                          source={{
+                                            uri: `http://${tweet?.reTweet?.imageURL}`,
+                                            cache: 'only-if-cached',
+                                          }}
+                                          style={{
+                                            width: '100%',
+                                            height: 200,
+                                            aspectRatio: 1.4,
+                                          }}
+                                        />
+                                      )}
+                                    </View>
+
+                                    <View
+                                      style={{
+                                        flexDirection: 'row',
+                                        justifyContent: 'space-between',
+                                        marginHorizontal: 7,
+                                        marginVertical: 10,
+                                      }}>
+                                      <TouchableOpacity
+                                        disabled={!tweet.reTweet.isComment}
+                                        onPress={() =>
+                                          navigation.navigate('Comment', {
+                                            tweetInfo: tweet?.reTweet,
+                                          })
+                                        }
+                                        style={{
+                                          flexDirection: 'row',
+                                          marginTop: 7,
+                                        }}>
+                                        <MaterialCommunityIcons
+                                          name="comment"
+                                          color={
+                                            tweet?.reTweet?.comments?.some(
+                                              cmnt =>
+                                                cmnt?.postedBy?._id ==
+                                                userInfo?._id,
+                                            )
+                                              ? theme.colors.secondary
+                                              : 'gray'
+                                          }
+                                          size={22}
+                                        />
+                                        <Text
+                                          style={{
+                                            marginLeft: 5,
+                                            fontSize: 17,
+                                          }}>
+                                          {tweet?.reTweet?.comments?.length ||
+                                            0}
+                                        </Text>
+                                      </TouchableOpacity>
+                                      <TouchableOpacity
+                                        onPress={() =>
+                                          retweetHandel(tweet?.reTweet?._id)
+                                        }
+                                        style={{
+                                          flexDirection: 'row',
+                                          marginTop: 7,
+                                          marginLeft: 20,
+                                        }}>
+                                        <MaterialCommunityIcons
+                                          name="autorenew"
+                                          color={
+                                            tweet?.reTweet?.reTweetCount?.includes(
+                                              userInfo._id,
+                                            )
+                                              ? theme.colors.secondary
+                                              : 'gray'
+                                          }
+                                          size={22}
+                                        />
+                                        <Text
+                                          style={{
+                                            marginLeft: 5,
+                                            fontSize: 17,
+                                          }}>
+                                          {tweet?.reTweet?.reTweetCount
+                                            ?.length || 0}
+                                        </Text>
+                                      </TouchableOpacity>
+                                      <TouchableOpacity
+                                        onPress={() =>
+                                          likeHanel(tweet?.reTweet?._id)
+                                        }
+                                        style={{
+                                          flexDirection: 'row',
+                                          marginTop: 7,
+                                          marginLeft: 20,
+                                        }}>
+                                        <MaterialCommunityIcons
+                                          name="heart"
+                                          color={
+                                            tweet?.reTweet?.likes.includes(
+                                              userInfo._id,
+                                            )
+                                              ? theme.colors.secondary
+                                              : 'gray'
+                                          }
+                                          size={22}
+                                        />
+                                        <Text
+                                          style={{
+                                            marginLeft: 5,
+                                            fontSize: 17,
+                                          }}>
+                                          {tweet?.reTweet?.likes?.length || 0}
+                                        </Text>
+                                      </TouchableOpacity>
+                                      <TouchableOpacity
+                                        onPress={() =>
+                                          bookmarkHandler(tweet?.reTweet?._id)
+                                        }
+                                        style={{
+                                          flexDirection: 'row',
+                                          marginTop: 7,
+                                          marginLeft: 20,
+                                        }}>
+                                        <MaterialCommunityIcons
+                                          name="card-plus"
+                                          color={
+                                            bookmarkList &&
+                                            bookmarkList?.some(
+                                              bookmark =>
+                                                bookmark.tweet?._id ==
+                                                tweet?.reTweet?._id,
+                                            )
+                                              ? theme.colors.secondary
+                                              : 'gray'
+                                          }
+                                          size={22}
+                                        />
+                                      </TouchableOpacity>
                                     </View>
                                   </View>
                                   <Divider />
                                 </View>
                               ) : (
-                                <View style={styles.tweetContainer}>
-                                  <TouchableOpacity
-                                    onPress={() =>
-                                      navigation.navigate('Profile', {
-                                        user: tweet?.postedBy?._id,
-                                      })
-                                    }>
-                                    <Image
-                                      source={
-                                        tweet?.postedBy?.imageURL
-                                          ? {uri: tweet?.postedBy?.imageURL}
-                                          : require('../assets/profile.png')
-                                      }
-                                      onLoad={() => setImgError(true)}
-                                      onError={() => setImgError(false)}
-                                      style={styles.profileImage}
-                                    />
-                                  </TouchableOpacity>
-                                  <View style={{marginLeft: 10}}>
-                                    <TouchableOpacity
-                                      onPress={() =>
-                                        navigation.navigate('Comment', {
-                                          tweetInfo: tweet,
-                                        })
-                                      }>
-                                      <View
-                                        style={{
-                                          flexDirection: 'row',
-                                          justifyContent: 'space-between',
-                                        }}>
-                                        <Text style={styles.name}>
-                                          {tweet?.postedBy?.name}
-                                        </Text>
-                                        {/* <Text>Khalid</Text> */}
-                                      </View>
-                                      <Text style={styles.userName}>
-                                        @{tweet?.postedBy?.name}
-                                      </Text>
-                                      <Text style={styles.tweet}>
-                                        {tweet?.content}
-                                      </Text>
-                                      <View>
-                                        {tweet?.imageURL && (
-                                          <Image
-                                            source={{
-                                              uri: `http://${tweet?.imageURL}`,
-                                              cache: 'only-if-cached',
-                                            }}
+                                <>
+                                  <View
+                                    style={{
+                                      display: 'flex',
+                                      flexDirection: 'row',
+                                      justifyContent: 'space-between',
+                                    }}>
+                                    <View style={styles.tweetContainer}>
+                                      <TouchableOpacity
+                                        onPress={() =>
+                                          navigation.navigate('Profile', {
+                                            user: tweet?.postedBy?._id,
+                                          })
+                                        }>
+                                        <Image
+                                          source={
+                                            tweet?.postedBy?.imageURL
+                                              ? {uri: tweet?.postedBy?.imageURL}
+                                              : require('../assets/profile.png')
+                                          }
+                                          onLoad={() => setImgError(true)}
+                                          onError={() => setImgError(false)}
+                                          style={styles.profileImage}
+                                        />
+                                      </TouchableOpacity>
+                                      <View style={{marginLeft: 10}}>
+                                        <TouchableOpacity
+                                          onPress={() =>
+                                            navigation.navigate('Comment', {
+                                              tweetInfo: tweet,
+                                            })
+                                          }>
+                                          <View
                                             style={{
-                                              width: '100%',
-                                              height: 200,
-                                              aspectRatio: 1.4,
-                                            }}
-                                          />
-                                        )}
+                                              flexDirection: 'row',
+                                              justifyContent: 'space-between',
+                                            }}>
+                                            <Text style={styles.name}>
+                                              {tweet?.postedBy?.name}
+                                            </Text>
+                                            {/* <Text>Khalid</Text> */}
+                                          </View>
+                                          <Text style={styles.userName}>
+                                            @{tweet?.postedBy?.name}
+                                          </Text>
+                                        </TouchableOpacity>
                                       </View>
-                                    </TouchableOpacity>
+                                    </View>
+                                    <View>
+                                    {(isEdit ||
+                                        userList?._id === userInfo?._id) && (
+                                        <TouchableOpacity
+                                          onPress={() =>
+                                            deletehandler(tweet?._id)
+                                          }
+                                          style={{
+                                            flexDirection: 'row',
+                                            marginTop: 7,
+                                          }}>
+                                          <MaterialCommunityIcons
+                                            name="delete"
+                                            color={'red'}
+                                            size={22}
+                                          />
+                                        </TouchableOpacity>
+                                      )}
+                                    </View>
+                                  </View>
+                                  <View style={{marginLeft: 65}}>
+                                    <Text style={styles.tweet}>
+                                      {tweet?.content}
+                                    </Text>
+                                    <View>
+                                      {tweet?.imageURL && (
+                                        <Image
+                                          source={{
+                                            uri: `http://${tweet?.imageURL}`,
+                                            cache: 'only-if-cached',
+                                          }}
+                                          style={{
+                                            width: '100%',
+                                            height: 200,
+                                            aspectRatio: 1.4,
+                                          }}
+                                        />
+                                      )}
+                                    </View>
                                     <View
                                       style={{
                                         flexDirection: 'row',
@@ -788,7 +871,10 @@ export const ProfileScreen = ({route}) => {
                                           size={22}
                                         />
                                         <Text
-                                          style={{marginLeft: 5, fontSize: 17}}>
+                                          style={{
+                                            marginLeft: 5,
+                                            fontSize: 17,
+                                          }}>
                                           {tweet?.comments?.length || 0}
                                         </Text>
                                       </TouchableOpacity>
@@ -813,7 +899,10 @@ export const ProfileScreen = ({route}) => {
                                           size={22}
                                         />
                                         <Text
-                                          style={{marginLeft: 5, fontSize: 17}}>
+                                          style={{
+                                            marginLeft: 5,
+                                            fontSize: 17,
+                                          }}>
                                           {tweet?.reTweetCount?.length || 0}
                                         </Text>
                                       </TouchableOpacity>
@@ -834,7 +923,10 @@ export const ProfileScreen = ({route}) => {
                                           size={22}
                                         />
                                         <Text
-                                          style={{marginLeft: 5, fontSize: 17}}>
+                                          style={{
+                                            marginLeft: 5,
+                                            fontSize: 17,
+                                          }}>
                                           {tweet?.likes?.length || 0}
                                         </Text>
                                       </TouchableOpacity>
@@ -853,7 +945,7 @@ export const ProfileScreen = ({route}) => {
                                             bookmarkList &&
                                             bookmarkList?.some(
                                               bookmark =>
-                                                bookmark.tweet._id ==
+                                                bookmark.tweet?._id ==
                                                 tweet?._id,
                                             )
                                               ? theme.colors.secondary
@@ -864,7 +956,7 @@ export const ProfileScreen = ({route}) => {
                                       </TouchableOpacity>
                                     </View>
                                   </View>
-                                </View>
+                                </>
                               )}
                               <Divider />
                             </View>
@@ -967,6 +1059,18 @@ export const ProfileScreen = ({route}) => {
           },
         }}>
         {'Tweet picture updated successfully'}
+      </Snackbar>
+      <Snackbar
+        visible={deleteTweet}
+        onDismiss={onDismissDeleteSnackBar}
+        style={{backgroundColor: theme.colors.secondary}}
+        action={{
+          label: 'Undo',
+          onPress: () => {
+            // Do something
+          },
+        }}>
+        {'Tweet deleted successfully'}
       </Snackbar>
     </Layout>
   );
