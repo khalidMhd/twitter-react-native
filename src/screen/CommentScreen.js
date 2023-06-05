@@ -8,14 +8,17 @@ import {
   Text,
   FlatList,
   ScrollView,
+  Permission,
+  PermissionsAndroid,
 } from 'react-native';
+import RNFetchBlob from 'rn-fetch-blob';
+
 import {baseURL, instance} from '../APIs/instance';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Divider, Snackbar} from 'react-native-paper';
 import Layout from '../components/layout';
 import {theme} from '../core/theme';
-import RNFS from 'react-native-fs';
 
 export const CommentScreen = ({route}) => {
   const tweet = route.params.tweetInfo;
@@ -136,72 +139,67 @@ export const CommentScreen = ({route}) => {
     }
   };
 
-  const downloadHandler = async () => {
-    try {
-      const res = await axios.get(`${baseURL}/api/download-file/file`, { responseType: 'blob' });
-      const path = RNFS.DocumentDirectoryPath + '/' + "imageName.png";
-      await RNFS.writeFile(path, res.data, 'base64');
-  
-      console.log(res);
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const downloadImage = async (url) => {
-    try {
-      console.log(url);
-      const { config, fs } = RNFS;
-      const destinationPath = `${RNFS.DocumentDirectoryPath}/image.png`;
-
-  
-      const downloadOptions = {
-        fromUrl: url,
-        toFile: destinationPath,
-        background: true,
-        discretionary: true,
-        cacheable: true,
-        progressDivider: 1,
-        headers: {},
-        connectionTimeout: 60000,
-        readTimeout: 60000,
-        progress: (res) => {
-          // handle progress updates if needed
-        },
-      };
-      const result = await config({
-        fileCache: true,
-        path: destinationPath,
-        addAndroidDownloads:
-          Platform.OS === 'android'
-            ? {
-                useDownloadManager: true,
-                notification: true,
-                title: 'Download',
-                description: 'Downloading image',
-                mime: 'image/png',
-                mediaScannable: true,
-                path: destinationPath,
-              }
-            : undefined,
-      });
-
-      const { jobId } = result;
-      const downloadResult = await fs.downloadFile(downloadOptions);
-  
-      if (downloadResult.statusCode === 200) {
-        // Image downloaded successfully
-        console.log('Image downloaded successfully');
-      } else {
-        // Failed to download image
-        console.log('Failed to download image');
+  const checkPermission = async url => {
+    if (Platform.OS == 'ios') {
+      download(url);
+    } else {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          {
+            title: 'Storage Permission Required',
+            message: 'App need to access to your storage to download photos',
+          },
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          console.log('Permission granted');
+          download(url);
+        } else {
+          console.log('not granted');
+        }
+      } catch (error) {
+        console.warn(error);
       }
-    } catch (error) {
-      console.log('Error:', error);
     }
   };
 
-  
+  const download = url => {
+    let date = new Date();
+    let imageURL = url;
+    let ext = getExtension(imageURL);
+    ext = '.' + ext;
+    const {config, fs} = RNFetchBlob;
+    let PictureDir = fs.dirs.PictureDir;
+    console.log(PictureDir);
+    let option = {
+      fileCache: true,
+      addAndroidDownloads: {
+        useDownloadManager: true,
+        notification: true,
+        path:
+          PictureDir +
+          '/image_' +
+          Math.floor(date.getTime() + date.getSeconds() / 2) +
+          ext,
+        description: 'image',
+      },
+    };
+    config(option)
+      .fetch('GET', imageURL)
+      .then(res => {
+        console.log('res => ', JSON.stringify(res));
+      });
+  };
+
+  const getExtension = url => {
+    var extension = url.substring(url.lastIndexOf('.') + 1);
+
+    // Convert the extension to lowercase for consistency
+    extension = extension.toLowerCase();
+
+    return extension;
+  };
+
   return (
     <Layout>
       <View style={styles.container}>
@@ -232,112 +230,117 @@ export const CommentScreen = ({route}) => {
                     <Text style={styles.userName}>
                       @{tweet?.postedBy?.name}
                     </Text>
-                    <Text style={styles.tweet}>{tweet?.content}</Text>
-                    <View>
-                      {tweet?.imageURL && (
-                        <Image
-                          source={{
-                            uri: `http://${tweet?.imageURL}`,
-                            cache: 'only-if-cached',
-                          }}
-                          style={{
-                            width: '100%',
-                            height: 200,
-                            aspectRatio: 1.4,
-                          }}
-                        />
-                      )}
-                    </View>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        marginHorizontal: 7,
-                        marginVertical: 10,
-                      }}>
-                      <TouchableOpacity
-                        disabled
-                        // onPress={() =>
-                        //   navigation.navigate('Comment', (tweetInfo = tweet))
-                        // }
-                        style={{flexDirection: 'row', marginTop: 7}}>
-                        <MaterialCommunityIcons
-                          name="comment"
-                          color={theme.colors.secondary}
-                          size={22}
-                        />
-                        <Text style={{marginLeft: 5, fontSize: 17}}>
-                          {tweet?.comments?.length || 0}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => console.log('Press')}
-                        style={{
-                          flexDirection: 'row',
-                          marginTop: 7,
-                          marginLeft: 20,
-                        }}>
-                        <MaterialCommunityIcons
-                          name="autorenew"
-                          color={theme.colors.secondary}
-                          size={22}
-                        />
-                        <Text style={{marginLeft: 5, fontSize: 17}}>
-                          {tweet?.reTweetCount?.length || 0}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => likeHanel(tweet?._id)}
-                        style={{
-                          flexDirection: 'row',
-                          marginTop: 7,
-                          marginLeft: 20,
-                        }}>
-                        <MaterialCommunityIcons
-                          name="heart"
-                          color={theme.colors.secondary}
-                          size={22}
-                        />
-                        <Text style={{marginLeft: 5, fontSize: 17}}>
-                          {tweet?.likes?.length || 0}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => bookmarkHandler(tweet?._id)}
-                        style={{
-                          flexDirection: 'row',
-                          marginTop: 7,
-                          marginLeft: 20,
-                        }}>
-                        <MaterialCommunityIcons
-                          name="card-plus"
-                          color={
-                            bookmarkList &&
-                            bookmarkList?.some(
-                              bookmark => bookmark.tweet?._id == tweet?._id,
-                            )
-                              ? theme.colors.secondary
-                              : 'gray'
-                          }
-                          size={22}
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => downloadImage(`http://${tweet?.imageURL}`)}
-                        style={{
-                          flexDirection: 'row',
-                          marginTop: 7,
-                          marginLeft: 20,
-                        }}>
-                        <MaterialCommunityIcons
-                          name="download"
-                          color={'gray'}
-                          size={25}
-                        />
-                      </TouchableOpacity>
-                    </View>
                   </View>
                 </View>
+                <View style={{marginLeft:55}}>
+                  <Text style={styles.tweet}>{tweet?.content}</Text>
+                  <View>
+                    {tweet?.imageURL && (
+                      <Image
+                        source={{
+                          uri: `http://${tweet?.imageURL}`,
+                          cache: 'only-if-cached',
+                        }}
+                        style={{
+                          width: '100%',
+                          height: 200,
+                          aspectRatio: 1.4,
+                        }}
+                      />
+                    )}
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginHorizontal: 7,
+                      marginVertical: 10,
+                    }}>
+                    <TouchableOpacity
+                      disabled
+                      // onPress={() =>
+                      //   navigation.navigate('Comment', (tweetInfo = tweet))
+                      // }
+                      style={{flexDirection: 'row', marginTop: 7}}>
+                      <MaterialCommunityIcons
+                        name="comment"
+                        color={theme.colors.secondary}
+                        size={22}
+                      />
+                      <Text style={{marginLeft: 5, fontSize: 17}}>
+                        {tweet?.comments?.length || 0}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => console.log('Press')}
+                      style={{
+                        flexDirection: 'row',
+                        marginTop: 7,
+                        marginLeft: 20,
+                      }}>
+                      <MaterialCommunityIcons
+                        name="autorenew"
+                        color={theme.colors.secondary}
+                        size={22}
+                      />
+                      <Text style={{marginLeft: 5, fontSize: 17}}>
+                        {tweet?.reTweetCount?.length || 0}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => likeHanel(tweet?._id)}
+                      style={{
+                        flexDirection: 'row',
+                        marginTop: 7,
+                        marginLeft: 20,
+                      }}>
+                      <MaterialCommunityIcons
+                        name="heart"
+                        color={theme.colors.secondary}
+                        size={22}
+                      />
+                      <Text style={{marginLeft: 5, fontSize: 17}}>
+                        {tweet?.likes?.length || 0}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => bookmarkHandler(tweet?._id)}
+                      style={{
+                        flexDirection: 'row',
+                        marginTop: 7,
+                        marginLeft: 20,
+                      }}>
+                      <MaterialCommunityIcons
+                        name="card-plus"
+                        color={
+                          bookmarkList &&
+                          bookmarkList?.some(
+                            bookmark => bookmark.tweet?._id == tweet?._id,
+                          )
+                            ? theme.colors.secondary
+                            : 'gray'
+                        }
+                        size={22}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() =>
+                        checkPermission(`http://${tweet?.imageURL}`)
+                      }
+                      style={{
+                        flexDirection: 'row',
+                        marginTop: 7,
+                        marginLeft: 20,
+                      }}>
+                      <MaterialCommunityIcons
+                        name="download"
+                        color={'gray'}
+                        size={25}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 <Divider />
               </View>
             ) : null}
